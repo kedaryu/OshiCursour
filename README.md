@@ -101,12 +101,25 @@ Releaseには、次の名前のアセットが両方必要です。
 - `OshiCursour-win-x64.zip`
 - `checksums.txt`
 
-GitHubへソースを反映した後、たとえば `v0.6.1` のタグをpushすると、`.github/workflows/release.yml` がWindows向けEXEをビルドします。ReleaseはDraftとして作成し、必要なアセットを添付してから公開するため、Release immutabilityを有効にしたリポジトリでも利用できます。タグと `CursorCycle.csproj` の `Version` は同じ値にしてください。
+GitHubへソースを反映した後、たとえば `v0.6.2` のタグをpushすると、`.github/workflows/release.yml` がWindows向けEXEをビルドします。ReleaseはDraftとして作成し、必要なアセットを添付してから公開するため、Release immutabilityを有効にしたリポジトリでも利用できます。タグと `CursorCycle.csproj` の `Version` は同じ値にしてください。
 
 ```cmd
-git tag v0.6.1
-git push origin v0.6.1
+git tag v0.6.2
+git push origin v0.6.2
 ```
+
+### Git操作をまとめて実行する
+
+`CursorCycle.csproj` の3か所のバージョンを更新して保存した後、リポジトリ直下の `publish-github-release.cmd` を実行すると、次の操作をまとめて行えます。
+
+1. Git、ブランチ、GitHub接続先、バージョン形式を検証
+2. GitHubの最新状態と既存タグを確認
+3. commit対象の変更一覧を表示して確認
+4. 変更をcommitして `main` をpush
+5. `vX.X.X` タグを作成してpush
+6. GitHub ActionsのURLを表示
+
+確認画面で `N` を選んだ場合、commit・push・タグ作成は行いません。GitHub側に同じタグが既にある場合や、ローカルの `main` がGitHubより古い場合も安全のため停止します。
 
 更新処理ではZIPのSHA-256を検証してから、実行中のEXEとは別の一時更新プロセスで本体を置換します。更新後のアプリが正常起動マーカーを作成できなければ、退避した旧EXEへ戻して再起動します。
 
