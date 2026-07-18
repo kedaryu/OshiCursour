@@ -1,0 +1,83 @@
+name: Create Windows release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Validate tag and project version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content "src/CursorCycle/CursorCycle.csproj"
+          $projectVersion = $project.Project.PropertyGroup.Version | Select-Object -First 1
+          $tagVersion = "${{ github.ref_name }}" -replace '^v', ''
+          if ($projectVersion -ne $tagVersion) {
+            throw "Tag version $tagVersion does not match project version $projectVersion."
+          }
+
+      - name: Publish Windows x64
+        shell: pwsh
+        run: |
+          dotnet publish "src/CursorCycle/CursorCycle.csproj" `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            --output "publish/win-x64" `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugSymbols=false `
+            -p:DebugType=None
+
+      - name: Create update assets
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "publish/release-assets" | Out-Null
+          Compress-Archive `
+            -LiteralPath "publish/win-x64/OshiCursour.exe" `
+            -DestinationPath "publish/release-assets/OshiCursour-win-x64.zip" `
+            -Force
+          $hash = (Get-FileHash `
+            -Algorithm SHA256 `
+            -LiteralPath "publish/release-assets/OshiCursour-win-x64.zip").Hash.ToLowerInvariant()
+          Set-Content `
+            -LiteralPath "publish/release-assets/checksums.txt" `
+            -Value "$hash  OshiCursour-win-x64.zip" `
+            -Encoding ascii
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OshiCursour-${{ github.ref_name }}
+          path: publish/release-assets/*
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            "publish/release-assets/OshiCursour-win-x64.zip" `
+            "publish/release-assets/checksums.txt" `
+            --repo "${{ github.repository }}" `
+            --verify-tag `
+            --generate-notes `
+            --title "OshiCursour ${{ github.ref_name }}"

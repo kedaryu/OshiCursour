@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CursorCycle</RootNamespace>
+    <AssemblyName>OshiCursour</AssemblyName>
+    <Product>OshiCursour</Product>
+    <Title>OshiCursour</Title>
+    <Description>お気に入りのマウスカーソルを自動で切り替える常駐アプリ</Description>
+    <ApplicationIcon>Resources\OshiCursour.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <UseAppHost>true</UseAppHost>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <DebugType Condition="'$(Configuration)' == 'Release'">embedded</DebugType>
+    <Version>0.6.0</Version>
+    <FileVersion>0.6.0.0</FileVersion>
+    <AssemblyVersion>0.6.0.0</AssemblyVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\OshiCursour.png" />
+  </ItemGroup>
+
+</Project>
