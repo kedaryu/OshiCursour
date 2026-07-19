@@ -49,6 +49,38 @@ Windows 10/11 のカーソル一式を、指定間隔でランダムまたは順
 
 ファイル名は Unicode 正規化してから比較します。通常カーソルだけは必須です。ほかの役割が不足している場合は、別のカーソルセットが混ざらないよう Windows 標準カーソルで補います。
 
+`カーソル通常`、`通常カーソル`のように区切り記号がないファイル名も、日本語の検索語が先頭または末尾にある場合は検出します。
+
+### 検索パターンと個別設定
+
+カーソル一覧画面の `検索設定を開く` から、次のファイルをメモ帳で編集できます。
+
+```text
+%LocalAppData%\OshiCursour\cursor-detection.json
+```
+
+初回に内蔵の標準パターンから自動生成されます。各Windowsカーソル役割に対して検索パターンを配列で指定し、`*` は任意の文字列、`?` は任意の1文字として使用できます。
+
+```json
+{
+  "DataVersion": 1,
+  "SearchSubfolders": false,
+  "PreferAnimatedCursors": true,
+  "PatternsByRegistryName": {
+    "Arrow": [
+      "通常",
+      "*通常",
+      "通常*",
+      "*カーソル通常"
+    ]
+  }
+}
+```
+
+保存後、カーソル一覧画面の `再検出` を押すと反映されます。JSONが壊れている場合は元ファイルを `.broken-日時` 付きで保存し、標準設定を再生成します。
+
+一覧の各役割にある `設定` から `.ani` / `.cur` を直接選ぶこともできます。個別設定は検索パターンによる自動検出より優先されます。設定済みの役割で再度 `設定` を押すと、ファイル変更または自動検出への復帰を選べます。
+
 ## 操作
 
 1. `OshiCursour.exe` を起動します。
@@ -101,11 +133,11 @@ Releaseには、次の名前のアセットが両方必要です。
 - `OshiCursour-win-x64.zip`
 - `checksums.txt`
 
-GitHubへソースを反映した後、たとえば `v0.6.2` のタグをpushすると、`.github/workflows/release.yml` がWindows向けEXEをビルドします。ReleaseはDraftとして作成し、必要なアセットを添付してから公開するため、Release immutabilityを有効にしたリポジトリでも利用できます。タグと `CursorCycle.csproj` の `Version` は同じ値にしてください。
+GitHubへソースを反映した後、たとえば `v0.7.0` のタグをpushすると、`.github/workflows/release.yml` がWindows向けEXEをビルドします。ReleaseはDraftとして作成し、必要なアセットを添付してから公開するため、Release immutabilityを有効にしたリポジトリでも利用できます。タグと `CursorCycle.csproj` の `Version` は同じ値にしてください。
 
 ```cmd
-git tag v0.6.2
-git push origin v0.6.2
+git tag v0.7.0
+git push origin v0.7.0
 ```
 
 ### Git操作をまとめて実行する

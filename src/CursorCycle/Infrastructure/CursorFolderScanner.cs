@@ -1,4 +1,5 @@
 using System.Text;
+using System.IO.Enumeration;
 using CursorCycle.Domain;
 
 namespace CursorCycle.Infrastructure;
@@ -8,8 +9,11 @@ public sealed class CursorFolderScanner
     private static readonly HashSet<string> SupportedExtensions =
         new(StringComparer.OrdinalIgnoreCase) { ".ani", ".cur" };
 
-    public CursorSetScanResult Scan(string folderPath)
+    private readonly CursorDetectionConfigStore _configStore = new();
+
+    public CursorSetScanResult Scan(CursorPreset preset)
     {
+        var folderPath = preset.FolderPath;
         var result = new CursorSetScanResult
         {
             FolderPath = folderPath
@@ -21,12 +25,16 @@ public sealed class CursorFolderScanner
             return result;
         }
 
+        var config = _configStore.Load();
         string[] files;
         try
         {
-            files = Directory.EnumerateFiles(folderPath, "*", SearchOption.TopDirectoryOnly)
+            var searchOption = config.SearchSubfolders
+                ? SearchOption.AllDirectories
+                : SearchOption.TopDirectoryOnly;
+            files = Directory.EnumerateFiles(folderPath, "*", searchOption)
                 .Where(path => SupportedExtensions.Contains(Path.GetExtension(path)))
-                .OrderByDescending(path =>
+                .OrderByDescending(path => config.PreferAnimatedCursors &&
                     string.Equals(Path.GetExtension(path), ".ani", StringComparison.OrdinalIgnoreCase))
                 .ThenBy(path => path, StringComparer.CurrentCultureIgnoreCase)
                 .ToArray();
@@ -51,16 +59,20 @@ public sealed class CursorFolderScanner
 
         foreach (var role in CursorRoles.All)
         {
-            var match = FindMatch(role, candidates);
+            config.PatternsByRegistryName.TryGetValue(role.RegistryName, out var patterns);
+            var match = FindMatch(patterns ?? [], candidates);
             if (match is not null)
             {
                 result.FilesByRegistryName[role.RegistryName] = match.Path;
             }
         }
 
+        ApplyManualAssignments(preset, result);
+
         if (!result.IsValid)
         {
-            result.Warnings.Add("`*_通常.ani` / `.cur` に相当する通常カーソルが見つかりません。");
+            result.Warnings.Add(
+                "通常カーソルが見つかりません。検索設定または個別設定を確認してください。");
         }
 
         if (result.IsValid && result.MatchedRoleCount < CursorRoles.All.Count)
@@ -74,39 +86,73 @@ public sealed class CursorFolderScanner
     }
 
     private static CursorFileCandidate? FindMatch(
-        CursorRoleDefinition role,
+        IReadOnlyList<string> patterns,
         IReadOnlyList<CursorFileCandidate> candidates)
     {
-        foreach (var rawAlias in role.FileAliases)
+        foreach (var rawPattern in patterns)
         {
-            var alias = Normalize(rawAlias);
-
-            var exact = candidates.FirstOrDefault(candidate => candidate.NormalizedStem == alias);
-            if (exact is not null)
+            var pattern = Normalize(rawPattern);
+            var match = candidates.FirstOrDefault(candidate =>
+                FileSystemName.MatchesSimpleExpression(
+                    pattern,
+                    candidate.NormalizedStem,
+                    ignoreCase: true));
+            if (match is not null)
             {
-                return exact;
+                return match;
             }
-
-            var suffix = candidates.FirstOrDefault(candidate =>
-                candidate.NormalizedStem.EndsWith("_" + alias, StringComparison.Ordinal) ||
-                candidate.NormalizedStem.EndsWith("-" + alias, StringComparison.Ordinal) ||
-                candidate.NormalizedStem.EndsWith(" " + alias, StringComparison.Ordinal));
-
-            if (suffix is not null)
-            {
-                return suffix;
-            }
-        }
-
-        // 以前の BAT でも Help だけは「ヘル」を含むファイルを予備検索していた。
-        // 配布元によって「ヘルプ選択」など末尾表記が揺れるため、その互換処理を残す。
-        if (string.Equals(role.RegistryName, "Help", StringComparison.OrdinalIgnoreCase))
-        {
-            return candidates.FirstOrDefault(candidate =>
-                candidate.NormalizedStem.Contains("ヘル", StringComparison.Ordinal));
         }
 
         return null;
+    }
+
+    private static void ApplyManualAssignments(
+        CursorPreset preset,
+        CursorSetScanResult result)
+    {
+        foreach (var assignment in preset.ManualFilesByRegistryName ??
+                 new Dictionary<string, string>())
+        {
+            var role = CursorRoles.All.FirstOrDefault(candidate =>
+                string.Equals(
+                    candidate.RegistryName,
+                    assignment.Key,
+                    StringComparison.OrdinalIgnoreCase));
+            if (role is null)
+            {
+                continue;
+            }
+
+            string resolvedPath;
+            try
+            {
+                resolvedPath = ResolveManualPath(preset.FolderPath, assignment.Value);
+            }
+            catch (Exception exception)
+            {
+                result.Warnings.Add(
+                    $"{role.DisplayName} の個別設定パスを読み込めません: {exception.Message}");
+                continue;
+            }
+            if (!File.Exists(resolvedPath) ||
+                !SupportedExtensions.Contains(Path.GetExtension(resolvedPath)))
+            {
+                result.Warnings.Add(
+                    $"{role.DisplayName} の個別設定ファイルが見つからないため、自動検出を使用します: " +
+                    assignment.Value);
+                continue;
+            }
+
+            result.FilesByRegistryName[role.RegistryName] = resolvedPath;
+            result.ManuallyAssignedRegistryNames.Add(role.RegistryName);
+        }
+    }
+
+    private static string ResolveManualPath(string folderPath, string configuredPath)
+    {
+        return Path.IsPathRooted(configuredPath)
+            ? configuredPath
+            : Path.GetFullPath(Path.Combine(folderPath, configuredPath));
     }
 
     private static string Normalize(string value)

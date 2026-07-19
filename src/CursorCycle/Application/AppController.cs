@@ -81,7 +81,7 @@ public sealed class AppController : IDisposable
 
     public CursorSetScanResult ScanPreset(CursorPreset preset)
     {
-        return _folderScanner.Scan(preset.FolderPath);
+        return _folderScanner.Scan(preset);
     }
 
     public OperationResult UpdateSettings(AppSettings updatedSettings)
@@ -298,7 +298,7 @@ public sealed class AppController : IDisposable
             return OperationResult.Fail("復元用カーソルを保存できないため、切り替えを中止しました。");
         }
 
-        var scan = _folderScanner.Scan(preset.FolderPath);
+        var scan = _folderScanner.Scan(preset);
         if (!scan.IsValid)
         {
             var detail = scan.Warnings.FirstOrDefault() ?? "カーソル一式を検出できません。";

@@ -2,7 +2,7 @@ namespace CursorCycle.Domain;
 
 public sealed class AppSettings
 {
-    public const int CurrentDataVersion = 1;
+    public const int CurrentDataVersion = 2;
     public const int MinimumIntervalSeconds = 5;
     public const int MaximumIntervalSeconds = 7 * 24 * 60 * 60;
 
@@ -88,6 +88,23 @@ public sealed class AppSettings
 
                 preset.Name = CleanName(preset.Name, "カーソル");
                 preset.FolderPath = (preset.FolderPath ?? string.Empty).Trim();
+                preset.ManualFilesByRegistryName ??=
+                    new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                var validRegistryNames = CursorRoles.All
+                    .Select(role => role.RegistryName)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var registryName in preset.ManualFilesByRegistryName.Keys.ToArray())
+                {
+                    var path = preset.ManualFilesByRegistryName[registryName]?.Trim();
+                    if (!validRegistryNames.Contains(registryName) || string.IsNullOrWhiteSpace(path))
+                    {
+                        preset.ManualFilesByRegistryName.Remove(registryName);
+                        continue;
+                    }
+
+                    preset.ManualFilesByRegistryName[registryName] = path;
+                }
             }
         }
 

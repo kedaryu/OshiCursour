@@ -18,9 +18,9 @@
     <PublishTrimmed>false</PublishTrimmed>
     <PublishReadyToRun>false</PublishReadyToRun>
     <DebugType Condition="'$(Configuration)' == 'Release'">embedded</DebugType>
-    <Version>0.6.2</Version>
-    <FileVersion>0.6.2.0</FileVersion>
-    <AssemblyVersion>0.6.2.0</AssemblyVersion>
+    <Version>0.7.0</Version>
+    <FileVersion>0.7.0.0</FileVersion>
+    <AssemblyVersion>0.7.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

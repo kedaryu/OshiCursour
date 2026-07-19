@@ -8,13 +8,19 @@ public sealed class CursorPreset
 
     public string FolderPath { get; set; } = string.Empty;
 
+    public Dictionary<string, string> ManualFilesByRegistryName { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public CursorPreset DeepClone()
     {
         return new CursorPreset
         {
             Id = Id,
             Name = Name,
-            FolderPath = FolderPath
+            FolderPath = FolderPath,
+            ManualFilesByRegistryName = new Dictionary<string, string>(
+                ManualFilesByRegistryName ?? new Dictionary<string, string>(),
+                StringComparer.OrdinalIgnoreCase)
         };
     }
 

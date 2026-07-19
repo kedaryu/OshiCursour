@@ -9,6 +9,9 @@ public sealed class CursorSetScanResult
 
     public List<string> Warnings { get; init; } = [];
 
+    public HashSet<string> ManuallyAssignedRegistryNames { get; init; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public bool IsValid => FilesByRegistryName.ContainsKey(CursorRoles.Arrow.RegistryName);
 
     public int MatchedRoleCount => FilesByRegistryName.Count;

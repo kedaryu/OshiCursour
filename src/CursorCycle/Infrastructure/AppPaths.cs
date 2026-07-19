@@ -9,4 +9,8 @@ public static class AppPaths
     public static string SettingsFile => Path.Combine(DataDirectory, "settings.json");
 
     public static string BaselineFile => Path.Combine(DataDirectory, "cursor-baseline.json");
+
+    public static string CursorDetectionConfigFile => Path.Combine(
+        DataDirectory,
+        "cursor-detection.json");
 }

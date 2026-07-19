@@ -1013,9 +1013,10 @@ public sealed class SettingsForm : Form
 
         using var details = new CursorDetailsForm(
             preset,
-            _controller.ScanPreset(preset),
+            () => _controller.ScanPreset(preset),
             _isDarkMode);
         details.ShowDialog(this);
+        RefreshPresetGrid(preset.Id);
     }
 
     private void ReadGeneralControlsIntoDraft()
